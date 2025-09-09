@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
   // Use named parameter for catch-all route
-  app.get("/:all(*)", (req, res) => {
+  app.get("/:all(.*)", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
   });
 }
