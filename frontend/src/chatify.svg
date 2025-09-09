@@ -1,0 +1,13 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Purple Chat Bubble -->
+  <rect x="30" y="20" width="140" height="100" rx="20" fill="#9333EA"></rect>
+  <circle cx="70" cy="70" r="8" fill="white"></circle>
+  <circle cx="100" cy="70" r="8" fill="white"></circle>
+  <circle cx="130" cy="70" r="8" fill="white"></circle>
+  <path d="M80 120 L60 140 L65 120" fill="#9333EA"></path>
+
+  <!-- White Text -->
+  <text x="100" y="180" font-size="40" font-weight="bold" text-anchor="middle" fill="white">
+    Chatify
+  </text>
+</svg>

@@ -1,0 +1,12 @@
+/* src/index.css */
+@import "tailwindcss";
+
+/* DaisyUI v5 + Tailwind v4: configure here (NOT in tailwind.config.js) */
+@plugin "daisyui" {
+  /* Simple option: enable all built-in themes */
+  themes: all;
+
+  /* OR choose your list + defaults:
+     themes: coffee --default, night --prefersdark, cupcake, emerald, nord, dracula, retro, cyberpunk;
+  */
+}
