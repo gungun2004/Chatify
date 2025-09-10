@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "../skeletons/MessageSkeleton";
@@ -19,6 +19,8 @@ const ChatContainer = () => {
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+
+  const [hoveredMsgId, setHoveredMsgId] = useState(null);
 
   useEffect(() => {
     if (!selectedUser?._id) return;
@@ -52,9 +54,14 @@ const ChatContainer = () => {
         {messages.map((message) => (
           <div
             key={message._id}
-            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
+            className={`relative group chat ${
+              message.senderId === authUser._id ? "chat-end" : "chat-start"
+            }`}
             ref={messageEndRef}
+            onMouseEnter={() => setHoveredMsgId(message._id)}
+            onMouseLeave={() => setHoveredMsgId(null)}
           >
+            {/* Avatar */}
             <div className="chat-image avatar">
               <div className="size-10 rounded-full border">
                 <img
@@ -68,31 +75,8 @@ const ChatContainer = () => {
               </div>
             </div>
 
-            <div className="chat-header mb-1 flex items-center justify-between">
-              <time className="text-xs opacity-50 ml-1">
-                {formatMessageTime(message.createdAt)}
-              </time>
-
-              {/* Delete Options */}
-              <div className="ml-2">
-                <button
-                  onClick={() => deleteMessageForMe(message._id)}
-                  className="text-xs text-red-400 hover:underline"
-                >
-                  Delete for me
-                </button>
-                {message.senderId === authUser._id && (
-                  <button
-                    onClick={() => deleteMessageForEveryone(message._id)}
-                    className="text-xs text-red-600 ml-2 hover:underline"
-                  >
-                    Delete for everyone
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="chat-bubble flex flex-col">
+            {/* Message bubble */}
+            <div className="chat-bubble flex flex-col relative">
               {message.isDeletedForEveryone ? (
                 <p className="italic text-gray-400">This message was deleted</p>
               ) : (
@@ -107,7 +91,36 @@ const ChatContainer = () => {
                   {message.text && <p>{message.text}</p>}
                 </>
               )}
+
+              {/* Time */}
+              <time className="text-[10px] opacity-50 mt-1 self-end">
+                {formatMessageTime(message.createdAt)}
+              </time>
             </div>
+
+            {/* Hover Delete Options (WhatsApp style) */}
+            {hoveredMsgId === message._id && (
+              <div
+                className={`absolute top-0 ${
+                  message.senderId === authUser._id ? "-left-20" : "-right-20"
+                } bg-gray-800 text-white text-xs rounded-md shadow-md p-1 flex flex-col z-10`}
+              >
+                <button
+                  onClick={() => deleteMessageForMe(message._id)}
+                  className="px-2 py-1 hover:bg-red-500 rounded-md"
+                >
+                  Delete for me
+                </button>
+                {message.senderId === authUser._id && (
+                  <button
+                    onClick={() => deleteMessageForEveryone(message._id)}
+                    className="px-2 py-1 hover:bg-red-600 rounded-md"
+                  >
+                    Delete for everyone
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
