@@ -52,8 +52,9 @@ export const useChatStore = create((set, get) => ({
   if (!selectedUser) return;
 
   const socket = useAuthStore.getState().socket;
+  socket.off("newMessage");
+  socket.off("messageDeleted");
 
-  socket.off("newMessage"); // old listeners hata do
   socket.on("newMessage", (newMessage) => {
     if (
       newMessage.senderId === selectedUser._id ||
@@ -62,7 +63,44 @@ export const useChatStore = create((set, get) => ({
       set({ messages: [...get().messages, newMessage] });
     }
   });
+
+  socket.on("messageDeleted", ({ messageId, type }) => {
+    set({
+      messages: get().messages.map((msg) =>
+        msg._id === messageId
+          ? type === "everyone"
+            ? { ...msg, isDeletedForEveryone: true }
+            : msg
+          : msg
+      ),
+    });
+  });
 },
+
+deleteMessageForMe: async (messageId) => {
+  try {
+    await axiosInstance.delete(`/messages/${messageId}/deleteForMe`);
+    set({
+      messages: get().messages.filter((msg) => msg._id !== messageId),
+    });
+  } catch (err) {
+    toast.error("Failed to delete message for me");
+  }
+},
+
+deleteMessageForEveryone: async (messageId) => {
+  try {
+    await axiosInstance.delete(`/messages/${messageId}/deleteForEveryone`);
+    set({
+      messages: get().messages.map((msg) =>
+        msg._id === messageId ? { ...msg, isDeletedForEveryone: true } : msg
+      ),
+    });
+  } catch (err) {
+    toast.error("Failed to delete message for everyone");
+  }
+},
+
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;

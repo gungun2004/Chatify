@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
-import { io, getReceiverSocketId } from "../lib/socket.js";  // 👈 import socket
+import { io, getReceiverSocketId } from "../lib/socket.js";
 
 // Get users (for sidebar)
 export const getUsersForSidebar = async (req, res) => {
@@ -27,7 +27,12 @@ export const getMessages = async (req, res) => {
       ],
     }).sort({ createdAt: 1 });
 
-    res.status(200).json(messages);
+    // filter out deleted for me
+    const filteredMessages = messages.filter(
+      (msg) => !msg.deletedBy.includes(myId)
+    );
+
+    res.status(200).json(filteredMessages);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -58,13 +63,63 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    // 🔥 Realtime emit
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
     res.status(201).json(newMessage);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Delete only for current user
+export const deleteMessageForMe = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(id);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+
+    if (!message.deletedBy.includes(userId)) {
+      message.deletedBy.push(userId);
+      await message.save();
+    }
+
+    res.status(200).json({ success: true, messageId: id, deletedFor: "me" });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Delete for everyone
+export const deleteMessageForEveryone = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(id);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+
+    if (String(message.senderId) !== String(userId)) {
+      return res.status(403).json({ error: "Only sender can delete for everyone" });
+    }
+
+    message.isDeletedForEveryone = true;
+    await message.save();
+
+    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageDeleted", { messageId: id, type: "everyone" });
+    }
+    const senderSocketId = getReceiverSocketId(userId.toString());
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messageDeleted", { messageId: id, type: "everyone" });
+    }
+
+    res.status(200).json({ success: true, messageId: id, deletedFor: "everyone" });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
