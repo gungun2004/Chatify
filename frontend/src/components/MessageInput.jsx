@@ -1,32 +1,35 @@
-import { useRef,useState } from "react";
+import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
-import { Image, X , Send} from "lucide-react";
+import { Image, X, Send, Smile } from "lucide-react";
 import toast from "react-hot-toast";
+import EmojiPicker from "./EmojiPicker";
 
 const MessageInput = () => {
-    const [text, setText] = useState("");
-    const [imagePreview, setImagePreview] = useState(null);
+  const [text, setText] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const { sendMessage } = useChatStore();
 
-   const handleImageChange = (e) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
-     if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
-   }
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
     };
     reader.readAsDataURL(file);
+  };
 
-};
-    const removeImage = () => {
+  const removeImage = () => {
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
-    const handleSendMessage = async (e) => {
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
@@ -35,17 +38,22 @@ const MessageInput = () => {
         text: text.trim(),
         image: imagePreview,
       });
-       setText("");
+      setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
-   
+
+  const handleEmojiSelect = (emoji) => {
+    setText((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
   return (
- <div className="p-4 w-full">
-     {imagePreview && (
+    <div className="p-4 w-full relative">
+      {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
             <img
@@ -64,7 +72,8 @@ const MessageInput = () => {
           </div>
         </div>
       )}
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+
+      <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         <div className="flex-1 flex gap-2">
           <input
             type="text"
@@ -80,7 +89,18 @@ const MessageInput = () => {
             ref={fileInputRef}
             onChange={handleImageChange}
           />
-            <button
+
+          {/* Emoji Button */}
+          <button
+            type="button"
+            className="btn btn-circle text-yellow-500"
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+          >
+            <Smile size={20} />
+          </button>
+
+          {/* Image Button */}
+          <button
             type="button"
             className={`hidden sm:flex btn btn-circle
                      ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
@@ -88,18 +108,21 @@ const MessageInput = () => {
           >
             <Image size={20} />
           </button>
-          </div>
-           <button
+        </div>
+
+        <button
           type="submit"
           className="btn btn-sm btn-circle"
           disabled={!text.trim() && !imagePreview}
         >
           <Send size={22} />
         </button>
-          </form>
+      </form>
 
- </div>
+      {/* Emoji Picker */}
+      {showEmojiPicker && <EmojiPicker onSelect={handleEmojiSelect} />}
+    </div>
   );
 };
 
-export default MessageInput
+export default MessageInput;

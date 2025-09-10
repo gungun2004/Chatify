@@ -5,6 +5,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "../skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
+import { EllipsisVertical } from "lucide-react"; // 3-dot icon
 
 const ChatContainer = () => {
   const {
@@ -17,10 +18,10 @@ const ChatContainer = () => {
     deleteMessageForMe,
     deleteMessageForEveryone,
   } = useChatStore();
+
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
-
-  const [hoveredMsgId, setHoveredMsgId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
     if (!selectedUser?._id) return;
@@ -54,14 +55,9 @@ const ChatContainer = () => {
         {messages.map((message) => (
           <div
             key={message._id}
-            className={`relative group chat ${
-              message.senderId === authUser._id ? "chat-end" : "chat-start"
-            }`}
+            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
             ref={messageEndRef}
-            onMouseEnter={() => setHoveredMsgId(message._id)}
-            onMouseLeave={() => setHoveredMsgId(null)}
           >
-            {/* Avatar */}
             <div className="chat-image avatar">
               <div className="size-10 rounded-full border">
                 <img
@@ -75,8 +71,50 @@ const ChatContainer = () => {
               </div>
             </div>
 
-            {/* Message bubble */}
-            <div className="chat-bubble flex flex-col relative">
+            <div className="chat-header mb-1 flex items-center justify-between relative">
+              <time className="text-xs opacity-50 ml-1">
+                {formatMessageTime(message.createdAt)}
+              </time>
+
+              {/* 3-dot menu */}
+              <div className="ml-2 relative">
+                <button
+                  onClick={() =>
+                    setOpenMenuId(openMenuId === message._id ? null : message._id)
+                  }
+                  className="p-1 hover:bg-gray-700 rounded-full"
+                >
+                  <EllipsisVertical size={16} />
+                </button>
+
+                {openMenuId === message._id && (
+                  <div className="absolute right-0 mt-1 w-40 bg-gray-800 text-white text-sm rounded-lg shadow-lg z-50">
+                    <button
+                      onClick={() => {
+                        deleteMessageForMe(message._id);
+                        setOpenMenuId(null);
+                      }}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-700"
+                    >
+                      Delete for me
+                    </button>
+                    {message.senderId === authUser._id && (
+                      <button
+                        onClick={() => {
+                          deleteMessageForEveryone(message._id);
+                          setOpenMenuId(null);
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-red-400"
+                      >
+                        Delete for everyone
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="chat-bubble flex flex-col">
               {message.isDeletedForEveryone ? (
                 <p className="italic text-gray-400">This message was deleted</p>
               ) : (
@@ -91,36 +129,7 @@ const ChatContainer = () => {
                   {message.text && <p>{message.text}</p>}
                 </>
               )}
-
-              {/* Time */}
-              <time className="text-[10px] opacity-50 mt-1 self-end">
-                {formatMessageTime(message.createdAt)}
-              </time>
             </div>
-
-            {/* Hover Delete Options (WhatsApp style) */}
-            {hoveredMsgId === message._id && (
-              <div
-                className={`absolute top-0 ${
-                  message.senderId === authUser._id ? "-left-20" : "-right-20"
-                } bg-gray-800 text-white text-xs rounded-md shadow-md p-1 flex flex-col z-10`}
-              >
-                <button
-                  onClick={() => deleteMessageForMe(message._id)}
-                  className="px-2 py-1 hover:bg-red-500 rounded-md"
-                >
-                  Delete for me
-                </button>
-                {message.senderId === authUser._id && (
-                  <button
-                    onClick={() => deleteMessageForEveryone(message._id)}
-                    className="px-2 py-1 hover:bg-red-600 rounded-md"
-                  >
-                    Delete for everyone
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         ))}
       </div>
