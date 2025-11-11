@@ -19,6 +19,7 @@ app.use(
   cors({
     origin: process.env.CLIENT_URL || "https://chatifyat1.onrender.com",
     credentials: true,
+    sameSite: "none"
   })
 );
 
